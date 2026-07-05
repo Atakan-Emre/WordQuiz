@@ -1,16 +1,19 @@
-import { createExampleList, filterByWeek, normalize } from './utils.js';
+import { createExampleList, DOMAIN_LABELS, filterByWeek, normalize, shuffle } from './utils.js';
 
 const PAGE_SIZE = 30;
+const SWIPE_BATCH_SIZE = 20;
 
 export class LearnModule {
   constructor(root, vocabulary, progress, onProgress) {
     this.root = root;
     this.vocabulary = vocabulary;
+    this.order = [...vocabulary];
     this.progress = progress;
     this.onProgress = onProgress;
     this.filtered = [];
     this.index = 0;
     this.listLimit = PAGE_SIZE;
+    this.swipeRendered = 0;
     this.mode = 'card';
     this.bindElements();
     this.bindEvents();
@@ -23,6 +26,8 @@ export class LearnModule {
     this.search = byId('learnSearch');
     this.cardMode = byId('learnCardMode');
     this.listMode = byId('learnListMode');
+    this.swipeMode = byId('learnSwipeMode');
+    this.swipeFeed = byId('swipeFeed');
     this.word = byId('learnWord');
     this.meaning = byId('learnMeaning');
     this.examples = byId('learnExamples');
@@ -36,6 +41,7 @@ export class LearnModule {
     this.mark = byId('markLearned');
     this.list = byId('learnList');
     this.loadMore = byId('loadMoreWords');
+    this.shuffleButton = byId('shuffleLearn');
     this.modeButtons = [...this.root.querySelectorAll('[data-learn-mode]')];
   }
 
@@ -50,6 +56,15 @@ export class LearnModule {
       this.listLimit += PAGE_SIZE;
       this.renderList();
     });
+    this.shuffleButton.addEventListener('click', () => this.shuffleWords());
+    this.swipeFeed.addEventListener('scroll', () => {
+      const threshold = this.swipeFeed.clientHeight * 1.5;
+      if (
+        this.swipeFeed.scrollTop + this.swipeFeed.clientHeight >= this.swipeFeed.scrollHeight - threshold
+      ) {
+        this.appendSwipeBatch();
+      }
+    });
     this.modeButtons.forEach((button) =>
       button.addEventListener('click', () => this.setMode(button.dataset.learnMode)),
     );
@@ -62,12 +77,13 @@ export class LearnModule {
   applyFilters(preserve = true) {
     const currentId = preserve ? this.current()?.id : null;
     const query = normalize(this.search.value);
-    this.filtered = filterByWeek(this.vocabulary, this.week.value).filter(
+    this.filtered = filterByWeek(this.order, this.week.value).filter(
       (item) => !query || normalize(`${item.word} ${item.meaning}`).includes(query),
     );
     const preserved = this.filtered.findIndex((item) => item.id === currentId);
     this.index = preserved >= 0 ? preserved : 0;
     this.listLimit = PAGE_SIZE;
+    this.swipeRendered = 0;
     this.render();
   }
 
@@ -80,12 +96,15 @@ export class LearnModule {
     });
     this.cardMode.hidden = mode !== 'card';
     this.listMode.hidden = mode !== 'list';
+    this.swipeMode.hidden = mode !== 'swipe';
     if (mode === 'list') this.renderList();
+    if (mode === 'swipe') this.renderSwipe();
   }
 
   render() {
     this.renderCard();
     if (this.mode === 'list') this.renderList();
+    if (this.mode === 'swipe') this.renderSwipe();
   }
 
   renderCard() {
@@ -130,14 +149,26 @@ export class LearnModule {
     this.root.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
+  shuffleWords() {
+    this.order = shuffle(this.order);
+    this.shuffleButton.classList.add('is-shuffling');
+    setTimeout(() => this.shuffleButton.classList.remove('is-shuffling'), 350);
+    this.applyFilters(false);
+  }
+
   toggleLearned(id) {
     if (!id) return;
     const learned = new Set(this.progress.learned);
     learned.has(id) ? learned.delete(id) : learned.add(id);
     this.progress.learned = [...learned];
     this.onProgress();
-    this.updateMarkButton(id);
-    if (this.mode === 'list') this.renderList();
+    if (this.current()?.id === id) this.updateMarkButton(id);
+    this.root.querySelectorAll(`[data-learned-id="${id}"]`).forEach((button) => {
+      button.classList.toggle('is-selected', learned.has(id));
+      button.textContent = learned.has(id) ? '✓ Öğrenildi' : '✓ Öğrendim';
+    });
+    const status = this.root.querySelector(`[data-entry-id="${id}"] .row-status`);
+    if (status) status.textContent = learned.has(id) ? 'Öğrenildi' : '';
   }
 
   updateMarkButton(id) {
@@ -152,12 +183,13 @@ export class LearnModule {
     items.forEach((entry) => {
       const row = document.createElement('article');
       row.className = 'vocab-row';
+      row.dataset.entryId = entry.id;
       const trigger = document.createElement('button');
       trigger.type = 'button';
       trigger.className = 'vocab-row-trigger';
       trigger.setAttribute('aria-expanded', 'false');
       const learned = this.progress.learned.includes(entry.id);
-      trigger.innerHTML = `<span class="row-number">${String(entry.number).padStart(3, '0')}</span><span class="row-word"></span><span class="row-meaning"></span><span class="row-week">${entry.week}. Hafta</span><span class="row-status">${learned ? 'Öğrenildi' : ''}</span><span class="row-chevron">⌄</span>`;
+      trigger.innerHTML = `<span class="row-number">${String(entry.number).padStart(3, '0')}</span><span class="row-language"><small>EN</small><span class="row-word"></span></span><span class="row-language row-language--meaning"><small>TR</small><span class="row-meaning"></span></span><span class="row-week">${entry.week}. Hafta</span><span class="row-status">${learned ? 'Öğrenildi' : ''}</span><span class="row-chevron">⌄</span>`;
       trigger.querySelector('.row-word').textContent = entry.word;
       trigger.querySelector('.row-meaning').textContent = entry.meaning;
       const details = document.createElement('div');
@@ -166,6 +198,7 @@ export class LearnModule {
       const learnedButton = document.createElement('button');
       learnedButton.type = 'button';
       learnedButton.className = `button button--soft row-learned${learned ? ' is-selected' : ''}`;
+      learnedButton.dataset.learnedId = entry.id;
       learnedButton.textContent = learned ? '✓ Öğrenildi' : '✓ Öğrendim';
       learnedButton.addEventListener('click', () => this.toggleLearned(entry.id));
       details.append(createExampleList(entry.examples), learnedButton);
@@ -183,5 +216,71 @@ export class LearnModule {
       empty.textContent = 'Bu filtrede kelime bulunamadı.';
       this.list.appendChild(empty);
     }
+  }
+
+  renderSwipe() {
+    this.swipeFeed.replaceChildren();
+    this.swipeFeed.scrollTop = 0;
+    this.swipeRendered = 0;
+    this.appendSwipeBatch();
+    if (!this.filtered.length) {
+      const empty = document.createElement('div');
+      empty.className = 'swipe-empty';
+      empty.textContent = 'Bu filtrede kelime bulunamadı.';
+      this.swipeFeed.appendChild(empty);
+    }
+  }
+
+  appendSwipeBatch() {
+    if (this.swipeRendered >= this.filtered.length) return;
+    const entries = this.filtered.slice(
+      this.swipeRendered,
+      this.swipeRendered + SWIPE_BATCH_SIZE,
+    );
+    entries.forEach((entry, offset) => {
+      const absoluteIndex = this.swipeRendered + offset;
+      const slide = document.createElement('article');
+      slide.className = 'swipe-slide';
+
+      const header = document.createElement('div');
+      header.className = 'swipe-slide-meta';
+      header.innerHTML = `<span>${entry.week}. Hafta</span><small>${absoluteIndex + 1} / ${this.filtered.length}</small>`;
+
+      const content = document.createElement('div');
+      content.className = 'swipe-slide-content';
+      const enLabel = document.createElement('small');
+      enLabel.textContent = 'English';
+      const word = document.createElement('h3');
+      word.textContent = entry.word;
+      const divider = document.createElement('i');
+      const trLabel = document.createElement('small');
+      trLabel.textContent = 'Türkçe';
+      const meaning = document.createElement('h4');
+      meaning.textContent = entry.meaning;
+      content.append(enLabel, word, divider, trLabel, meaning);
+
+      const example = entry.examples[absoluteIndex % entry.examples.length];
+      const context = document.createElement('div');
+      context.className = 'swipe-context';
+      const contextLabel = document.createElement('span');
+      contextLabel.textContent = DOMAIN_LABELS[example.domain] || example.domain;
+      const sentence = document.createElement('p');
+      sentence.textContent = example.sentence;
+      const translation = document.createElement('small');
+      translation.textContent = example.translation;
+      context.append(contextLabel, sentence, translation);
+
+      const learned = this.progress.learned.includes(entry.id);
+      const learnedButton = document.createElement('button');
+      learnedButton.type = 'button';
+      learnedButton.className = `swipe-learn-button${learned ? ' is-selected' : ''}`;
+      learnedButton.dataset.learnedId = entry.id;
+      learnedButton.textContent = learned ? '✓ Öğrenildi' : '✓ Öğrendim';
+      learnedButton.addEventListener('click', () => this.toggleLearned(entry.id));
+
+      slide.append(header, content, context, learnedButton);
+      this.swipeFeed.appendChild(slide);
+    });
+    this.swipeRendered += entries.length;
   }
 }

@@ -56,12 +56,14 @@
           <div class="segmented-control" aria-label="Öğrenme görünümü">
             <button class="is-active" type="button" data-learn-mode="card" aria-pressed="true">Flashcard</button>
             <button type="button" data-learn-mode="list" aria-pressed="false">Liste</button>
+            <button type="button" data-learn-mode="swipe" aria-pressed="false">Kaydır</button>
           </div>
         </header>
 
         <div class="toolbar">
           <label><span>Hafta</span><select id="learnWeek"><option value="all">Tüm haftalar</option><option value="1">1. Hafta</option><option value="2">2. Hafta</option><option value="3">3. Hafta</option><option value="4">4. Hafta</option></select></label>
           <label class="search-control"><span>Kelime ara</span><input id="learnSearch" type="search" placeholder="Kelime veya anlam…" autocomplete="off" /></label>
+          <button id="shuffleLearn" class="button button--soft shuffle-learn" type="button"><span aria-hidden="true">⇄</span> Karıştır</button>
         </div>
 
         <div id="learnCardMode" class="learn-card-layout">
@@ -88,6 +90,11 @@
         <div id="learnListMode" class="learn-list-layout" hidden>
           <div id="learnList" class="learn-list"></div>
           <button id="loadMoreWords" class="button button--ghost load-more" type="button">Daha fazla göster</button>
+        </div>
+
+        <div id="learnSwipeMode" class="swipe-mode" hidden>
+          <div class="swipe-mode-heading"><span>↑</span><p>Kelimeler arasında dikey kaydır</p><small>Her kartta İngilizce, Türkçe ve bağlam örneği birlikte gösterilir.</small></div>
+          <div id="swipeFeed" class="swipe-feed" tabindex="0" aria-label="Kaydırmalı kelime akışı"></div>
         </div>
       </section>
 

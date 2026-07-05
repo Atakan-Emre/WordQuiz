@@ -6,14 +6,16 @@ kaynaklarından çıkarılan 500 kelimeyi Türkçe anlamları ve sağlık, sosya
 
 ## Modüller
 
-- **Öğren:** Dokununca İngilizceden Türkçeye dönen flashcard'lar, örnek cümleler ve
-  İngilizce-Türkçe anlamı aynı satırda gösteren 30'ar kayıtlık ayrıntılı liste.
+- **Öğren:** Dokununca İngilizceden Türkçeye dönen flashcard'lar, taşmayan EN/TR listesi
+  ve Reels benzeri dikey snap kullanan kaydırmalı öğrenme akışı. Hafta/arama filtreleri ve
+  genel karıştırma düğmesi üç görünümde ortak çalışır.
 - **Test:** Hafta, 10/20/30 soru ve İngilizce-Türkçe veya Türkçe-İngilizce yön seçimi;
   anlık geri bildirim, sonuç ekranı ve yanlış inceleme.
 - **Oyun:** Altı çiftlik kelime eşleştirme ve 45 saniyelik hız turu.
 
 İlerleme, test istatistikleri, oyun rekorları ve tema tercihi tarayıcının `localStorage`
-alanında saklanır. Arayüz masaüstü, tablet ve mobil için responsive tasarlanmıştır.
+alanında saklanır. Arayüz masaüstü, tablet ve mobil için responsive tasarlanmıştır; ana
+navigasyon tablet ve mobilde ekranın üstünde sticky kalır.
 
 ## Çalıştırma
 
