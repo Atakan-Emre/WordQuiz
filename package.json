@@ -1,0 +1,11 @@
+{
+  "name": "word-quiz",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "serve": "python3 -m http.server 8000",
+    "check": "node --check app.js && node --check modules/games.js && node --check modules/learn.js && node --check modules/storage.js && node --check modules/test.js && node --check modules/utils.js",
+    "parse-data": "python3 scripts/parse_vocabulary.py"
+  }
+}

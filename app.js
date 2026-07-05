@@ -1,552 +1,111 @@
-const ANSWER_STORAGE_KEY = 'bayexam-answers';
-const SHUFFLE_STORAGE_KEY = 'bayexam-shuffle';
+import { GamesModule } from './modules/games.js';
+import { LearnModule } from './modules/learn.js';
+import { loadProgress, saveProgress } from './modules/storage.js';
+import { TestModule } from './modules/test.js';
 
-const questionListEl = document.getElementById('questionList');
-const correctCountEl = document.getElementById('correctCount');
-const wrongCountEl = document.getElementById('wrongCount');
-const answeredCountEl = document.getElementById('answeredCount');
-const totalCountEl = document.getElementById('totalCount');
-const accuracyLabelEl = document.getElementById('accuracyLabel');
-const accuracyProgressEl = document.getElementById('accuracyProgress');
-const searchInput = document.getElementById('searchInput');
-const sourceFilter = document.getElementById('sourceFilter');
-const shuffleToggleBtn = document.getElementById('shuffleToggle');
-const themeToggleBtn = document.getElementById('themeToggle');
-const resetBtn = document.getElementById('resetProgress');
-const template = document.getElementById('questionTemplate');
+const THEME_KEY = 'word-quiz-theme';
+const validViews = new Set(['learn', 'test', 'games']);
 
-const state = {
-  questions: [],
-  renderedQuestions: [],
-  answers: new Map(),
-  totals: {
-    correct: 0,
-    incorrect: 0,
-  },
-  shuffle: false,
-  filterWrongOnly: false,
+const elements = {
+  navButtons: [...document.querySelectorAll('[data-view]')],
+  viewPanels: [...document.querySelectorAll('[data-view-panel]')],
+  themeToggle: document.getElementById('themeToggle'),
+  learnedMetric: document.getElementById('learnedMetric'),
+  accuracyMetric: document.getElementById('accuracyMetric'),
+  gameMetric: document.getElementById('gameMetric'),
+  progressLabel: document.getElementById('progressLabel'),
+  progressFill: document.getElementById('progressFill'),
+  progressTrack: document.querySelector('.progress-track'),
+  appError: document.getElementById('appError'),
 };
 
-const escapeHtml = (value = '') =>
-  value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
+let progress = loadProgress();
+let vocabulary = [];
+let learnModule;
+let testModule;
+let gamesModule;
+let activeView = 'learn';
 
-const wrapBullets = (html) => {
-  if (!html.includes('•')) return html;
-  const [prefix, ...rest] = html.split('•');
-  const items = rest.map((item) => item.trim()).filter(Boolean);
-  if (!items.length) return html;
-  const list = `<ul>${items.map((item) => `<li>${item}</li>`).join('')}</ul>`;
-  const trimmedPrefix = prefix.trim();
-  return `${trimmedPrefix ? `<p>${trimmedPrefix}</p>` : ''}${list}`;
+const persistAndRefresh = () => {
+  saveProgress(progress);
+  renderOverview();
 };
 
-const formatExplanationHTML = (text) => {
-  if (!text) return '';
-  let html = escapeHtml(text);
-  html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-  html = html.replace(/__(.+?)__/g, '<em>$1</em>');
-  html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
-  html = html.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noreferrer">$1</a>');
-  html = html.replace(/\n+/g, '<br />');
-  return wrapBullets(html);
+const renderOverview = () => {
+  const validIds = new Set(vocabulary.map((entry) => entry.id));
+  progress.learned = progress.learned.filter((id) => validIds.has(id));
+  const learned = progress.learned.length;
+  const testTotal = progress.testStats.correct + progress.testStats.incorrect;
+  const accuracy = testTotal ? Math.round((progress.testStats.correct / testTotal) * 100) : 0;
+  const completion = vocabulary.length ? Math.round((learned / vocabulary.length) * 100) : 0;
+  elements.learnedMetric.textContent = learned;
+  elements.accuracyMetric.textContent = `${accuracy}%`;
+  elements.gameMetric.textContent = progress.gameStats.speedBest;
+  elements.progressLabel.textContent = `${learned} / ${vocabulary.length || 500}`;
+  elements.progressFill.style.width = `${completion}%`;
+  elements.progressTrack.setAttribute('aria-valuenow', String(completion));
 };
 
-const loadStoredAnswers = () => {
-  try {
-    const raw = JSON.parse(localStorage.getItem(ANSWER_STORAGE_KEY) || '{}');
-    return new Map(
-      Object.entries(raw).map(([key, value]) => [Number(key), value]),
-    );
-  } catch (error) {
-    console.warn('Cevap verileri yüklenemedi, sıfırdan başlatılıyor.', error);
-    return new Map();
-  }
-};
-
-const persistAnswers = () => {
-  const serializable = {};
-  state.answers.forEach((value, key) => {
-    serializable[key] = value;
+const switchView = (view, updateHash = true) => {
+  if (!validViews.has(view)) view = 'learn';
+  const previousView = activeView;
+  if (activeView === 'games' && view !== 'games') gamesModule?.deactivate();
+  activeView = view;
+  if (view === 'games' && previousView !== 'games') gamesModule?.showMenu();
+  elements.navButtons.forEach((button) => {
+    const active = button.dataset.view === view;
+    button.classList.toggle('is-active', active);
+    active ? button.setAttribute('aria-current', 'page') : button.removeAttribute('aria-current');
   });
-  localStorage.setItem(ANSWER_STORAGE_KEY, JSON.stringify(serializable));
-};
-
-const clearStoredAnswers = () => {
-  localStorage.removeItem(ANSWER_STORAGE_KEY);
-};
-
-const syncTotalsFromAnswers = () => {
-  state.totals.correct = 0;
-  state.totals.incorrect = 0;
-  state.answers.forEach((value) => {
-    if (value.status === 'correct') {
-      state.totals.correct += 1;
-    } else if (value.status === 'incorrect') {
-      state.totals.incorrect += 1;
-    }
+  elements.viewPanels.forEach((panel) => {
+    panel.hidden = panel.dataset.viewPanel !== view;
   });
+  if (updateHash) history.replaceState(null, '', `#${view}`);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 };
 
-const refreshShuffleKeys = () => {
-  state.questions.forEach((question, index) => {
-    question.originalIndex = question.originalIndex ?? index;
-    question.shuffleKey = Math.random();
-  });
-};
-
-state.answers = loadStoredAnswers();
-syncTotalsFromAnswers();
-state.shuffle = localStorage.getItem(SHUFFLE_STORAGE_KEY) === 'true';
-
-const normalize = (value) =>
-  (value || '')
-    .toString()
-    .trim()
-    .toLocaleLowerCase('tr-TR')
-    .replace(/\s+/g, ' ');
-
-const shuffle = (array) => {
-  const copy = [...array];
-  for (let i = copy.length - 1; i > 0; i -= 1) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [copy[i], copy[j]] = [copy[j], copy[i]];
-  }
-  return copy;
-};
-
-const buildOptionSet = (question, pool) => {
-  if (question.options && question.options.length > 0) {
-    return question.options.map((opt) => ({
-      label: opt.label,
-      text: opt.text,
-    }));
-  }
-
-  const uniquePool = pool.filter(
-    (text) => text && normalize(text) !== normalize(question.answer.text),
-  );
-
-  const distractors = shuffle(uniquePool).slice(0, Math.min(3, uniquePool.length));
-  const combined = shuffle([question.answer.text, ...distractors]);
-
-  return combined.map((text, idx) => ({
-    label: String.fromCharCode(65 + idx),
-    text,
-  }));
-};
-
-const isCorrectChoice = (choice, answer) => {
-  const sameLabel = answer.label && choice.label && answer.label === choice.label;
-  const sameText = normalize(choice.text) === normalize(answer.text);
-  return Boolean(sameLabel || sameText);
-};
-
-const formatScoreChip = () => `✔ ${state.totals.correct} · ✖ ${state.totals.incorrect}`;
-
-const updateCardMetrics = () => {
-  document.querySelectorAll('.question-card').forEach((card) => {
-    const chip = card.querySelector('.card-metrics');
-    if (!chip || chip.hidden) return;
-    chip.textContent = formatScoreChip();
-  });
-};
-
-const updateScoreboard = () => {
-  correctCountEl.textContent = state.totals.correct;
-  wrongCountEl.textContent = state.totals.incorrect;
-  answeredCountEl.textContent = state.answers.size;
-  totalCountEl.textContent = state.questions.length;
-
-  const answered = state.answers.size;
-  const accuracy = answered ? Math.round((state.totals.correct / answered) * 100) : 0;
-  if (accuracyLabelEl) {
-    accuracyLabelEl.textContent = `${accuracy}%`;
-  }
-  if (accuracyProgressEl) {
-    accuracyProgressEl.style.width = `${accuracy}%`;
-  }
-
-  updateCardMetrics();
-};
-
-const updateShuffleToggle = () => {
-  if (!shuffleToggleBtn) return;
-  shuffleToggleBtn.setAttribute('aria-pressed', String(state.shuffle));
-  const label = shuffleToggleBtn.querySelector('.shuffle-label');
-  if (label) {
-    label.textContent = state.shuffle ? 'Karışık sıra açık' : 'Sırayı karıştır';
-  }
-};
-
-const toggleShuffle = () => {
-  state.shuffle = !state.shuffle;
-  localStorage.setItem(SHUFFLE_STORAGE_KEY, String(state.shuffle));
-  if (state.shuffle) {
-    refreshShuffleKeys();
-  }
-  updateShuffleToggle();
-  applyFilters();
-};
-
-const formatSourceLabel = (fileName) => {
-  if (!fileName) return 'Kaynak yok';
-  const base = fileName.replace('.txt', '');
-  return `Belge ${base}`;
-};
-
-const clearList = () => {
-  questionListEl.innerHTML = '';
-};
-
-const applyStoredAnswer = (
-  card,
-  question,
-  storedAnswer,
-  feedbackEl,
-  feedbackStatus,
-  feedbackText,
-  revealChip,
-) => {
-  card.dataset.locked = 'true';
-  const optionButtons = card.querySelectorAll('.option-btn');
-
-  optionButtons.forEach((btn) => {
-    const btnChoice = {
-      label: btn.dataset.optionLabel,
-      text: btn.dataset.optionText,
-    };
-    const btnIsCorrect = isCorrectChoice(btnChoice, question.answer);
-    const selectionMatches =
-      storedAnswer.choice &&
-      (storedAnswer.choice.label
-        ? storedAnswer.choice.label === btnChoice.label
-        : normalize(storedAnswer.choice.text) === normalize(btnChoice.text));
-    btn.classList.toggle('is-correct', btnIsCorrect);
-    btn.classList.toggle('is-incorrect', !btnIsCorrect && selectionMatches);
-    btn.setAttribute('aria-checked', selectionMatches ? 'true' : 'false');
-    btn.disabled = true;
-  });
-
-  feedbackEl.hidden = false;
-  feedbackEl.classList.toggle('success', storedAnswer.status === 'correct');
-  feedbackEl.classList.toggle('error', storedAnswer.status !== 'correct');
-  feedbackStatus.textContent = storedAnswer.status === 'correct' ? 'Doğru!' : 'Yanlış cevap';
-  const explanationHtml =
-    formatExplanationHTML(question.explanation) ||
-    formatExplanationHTML('Bu soru için açıklama henüz eklenmemiş.');
-  feedbackText.innerHTML = explanationHtml;
-  revealChip();
-};
-
-const renderQuestions = () => {
-  clearList();
-  state.renderedQuestions.forEach((question, idx) => {
-    const card = template.content.firstElementChild.cloneNode(true);
-    const cardKicker = card.querySelector('.card-kicker');
-    const cardTitle = card.querySelector('.card-title');
-    const sourceBadge = card.querySelector('.source-badge');
-    const optionsEl = card.querySelector('.options');
-    const feedbackEl = card.querySelector('.feedback');
-    const feedbackStatus = card.querySelector('.feedback-status');
-    const feedbackText = card.querySelector('.feedback-text');
-    const chipEl = card.querySelector('.card-metrics');
-    const revealChip = () => {
-      if (!chipEl) return;
-      chipEl.hidden = false;
-      chipEl.textContent = formatScoreChip();
-    };
-    if (chipEl) {
-      chipEl.textContent = formatScoreChip();
-    }
-
-    card.dataset.questionId = question.id;
-    cardKicker.textContent = `Soru ${idx + 1}`;
-    cardTitle.textContent = question.question;
-    sourceBadge.textContent = formatSourceLabel(question.source);
-    optionsEl.setAttribute(
-      'aria-label',
-      `${question.number || idx + 1}. soru seçenekleri`,
-    );
-
-    const choices = question.renderOptions;
-    choices.forEach((choice) => {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'option-btn';
-      btn.textContent = choice.text;
-      btn.dataset.optionLabel = choice.label || '';
-      btn.dataset.optionText = choice.text;
-       btn.setAttribute('role', 'radio');
-       btn.setAttribute('aria-checked', 'false');
-       btn.setAttribute('tabindex', '0');
-      btn.addEventListener('click', () =>
-        handleAnswer(
-          question,
-          choice,
-          btn,
-          card,
-          feedbackEl,
-          feedbackStatus,
-          feedbackText,
-          revealChip,
-        ),
-      );
-      optionsEl.appendChild(btn);
-    });
-
-    const storedAnswer = state.answers.get(question.id);
-    if (storedAnswer) {
-      applyStoredAnswer(
-        card,
-        question,
-        storedAnswer,
-        feedbackEl,
-        feedbackStatus,
-        feedbackText,
-        revealChip,
-      );
-    }
-
-    questionListEl.appendChild(card);
-  });
-
-  questionListEl.setAttribute('aria-busy', 'false');
-};
-
-const applyFilters = () => {
-  const term = normalize(searchInput.value);
-  const source = sourceFilter.value;
-
-  let filtered = state.questions.filter((question) => {
-    const matchesSearch = !term || normalize(question.question).includes(term);
-    const matchesSource = !source || question.source === source;
-    const matchesWrongFilter =
-      !state.filterWrongOnly ||
-      (state.filterWrongOnly && state.answers.get(question.id)?.status === 'incorrect');
-    return matchesSearch && matchesSource && matchesWrongFilter;
-  });
-
-  const sorter = state.shuffle
-    ? (a, b) => a.shuffleKey - b.shuffleKey
-    : (a, b) => a.originalIndex - b.originalIndex;
-  filtered = [...filtered].sort(sorter);
-
-  state.renderedQuestions = filtered;
-  renderQuestions();
-  updateFilterButtons();
-};
-
-const resetProgress = () => {
-  state.answers.clear();
-  state.totals.correct = 0;
-  state.totals.incorrect = 0;
-  clearStoredAnswers();
-  updateScoreboard();
-  applyFilters();
-};
-
-const handleAnswer = (
-  question,
-  choice,
-  button,
-  card,
-  feedbackEl,
-  feedbackStatus,
-  feedbackText,
-  revealChip,
-) => {
-  if (card.dataset.locked === 'true') {
-    return;
-  }
-
-  card.dataset.locked = 'true';
-  const isCorrect = isCorrectChoice(choice, question.answer);
-  const optionButtons = card.querySelectorAll('.option-btn');
-
-  optionButtons.forEach((btn) => {
-    const btnChoice = {
-      label: btn.dataset.optionLabel,
-      text: btn.dataset.optionText,
-    };
-    const btnIsCorrect = isCorrectChoice(btnChoice, question.answer);
-    btn.classList.toggle('is-correct', btnIsCorrect);
-    btn.classList.toggle('is-incorrect', !btnIsCorrect && btn === button);
-    btn.setAttribute('aria-checked', btn === button ? 'true' : 'false');
-    btn.disabled = true;
-  });
-
-  feedbackEl.hidden = false;
-  feedbackEl.classList.toggle('success', isCorrect);
-  feedbackEl.classList.toggle('error', !isCorrect);
-  feedbackStatus.textContent = isCorrect ? 'Doğru!' : 'Yanlış cevap';
-  const explanationHtml =
-    formatExplanationHTML(question.explanation) ||
-    formatExplanationHTML('Bu soru için açıklama henüz eklenmemiş.');
-  feedbackText.innerHTML = explanationHtml;
-  revealChip();
-
-  state.answers.set(question.id, {
-    status: isCorrect ? 'correct' : 'incorrect',
-    choice,
-  });
-  if (isCorrect) {
-    state.totals.correct += 1;
-  } else {
-    state.totals.incorrect += 1;
-  }
-
-  persistAnswers();
-  updateScoreboard();
+const setTheme = (theme) => {
+  document.documentElement.dataset.theme = theme;
+  const dark = theme === 'dark';
+  elements.themeToggle.innerHTML = `<span aria-hidden="true">${dark ? '☀' : '☾'}</span>`;
+  elements.themeToggle.setAttribute('aria-label', dark ? 'Açık temayı aç' : 'Koyu temayı aç');
 };
 
 const initTheme = () => {
-  const storedTheme = localStorage.getItem('bayexam-theme');
-  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-  const theme = storedTheme || (prefersDark ? 'dark' : 'light');
-  document.documentElement.setAttribute('data-theme', theme);
-  updateThemeButton(theme);
-};
-
-const updateThemeButton = (theme) => {
-  const icon = theme === 'dark' ? '☀️' : '🌙';
-  const label = theme === 'dark' ? 'Aydınlık' : 'Karanlık';
-  themeToggleBtn.querySelector('.toggle-icon').textContent = icon;
-  themeToggleBtn.querySelector('.toggle-label').textContent = label;
-};
-
-const toggleTheme = () => {
-  const current = document.documentElement.getAttribute('data-theme');
-  const next = current === 'dark' ? 'light' : 'dark';
-  document.documentElement.setAttribute('data-theme', next);
-  localStorage.setItem('bayexam-theme', next);
-  updateThemeButton(next);
-};
-
-const populateSourceFilter = (questions) => {
-  const uniqueSources = [...new Set(questions.map((q) => q.source))].sort();
-  uniqueSources.forEach((source) => {
-    const option = document.createElement('option');
-    option.value = source;
-    option.textContent = formatSourceLabel(source);
-    sourceFilter.appendChild(option);
-  });
+  const stored = localStorage.getItem(THEME_KEY);
+  const preferred = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  setTheme(stored || preferred);
 };
 
 const bootstrap = async () => {
   try {
-    const response = await fetch('data/questions.json');
-    const data = await response.json();
-    const answersPool = data.map((q) => q.answer.text).filter(Boolean);
-
-    state.questions = data.map((question, index) => ({
-      ...question,
-      originalIndex: index,
-      shuffleKey: Math.random(),
-      renderOptions: buildOptionSet(question, answersPool),
-    }));
-    const validIds = new Set(state.questions.map((question) => question.id));
-    let hasRemovedStaleAnswer = false;
-    state.answers.forEach((_, key) => {
-      if (!validIds.has(key)) {
-        state.answers.delete(key);
-        hasRemovedStaleAnswer = true;
-      }
-    });
-    if (hasRemovedStaleAnswer) {
-      syncTotalsFromAnswers();
-      persistAnswers();
-    }
-    populateSourceFilter(state.questions);
-    applyFilters();
-    updateScoreboard();
+    const response = await fetch('data/vocabulary.json');
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    vocabulary = await response.json();
+    renderOverview();
+    learnModule = new LearnModule(document.getElementById('learnView'), vocabulary, progress, persistAndRefresh);
+    testModule = new TestModule(document.getElementById('testView'), vocabulary, progress, persistAndRefresh);
+    gamesModule = new GamesModule(document.getElementById('gamesView'), vocabulary, progress, persistAndRefresh);
+    const requestedView = window.location.hash.slice(1);
+    switchView(validViews.has(requestedView) ? requestedView : 'learn', false);
   } catch (error) {
-    questionListEl.innerHTML =
-      '<p>Veri yüklenemedi. Lütfen sayfayı yenileyin veya dosya yolunu doğrulayın.</p>';
-    questionListEl.setAttribute('aria-busy', 'false');
-    console.error('Soru verisi alınamadı', error);
+    console.error('Kelime verisi yüklenemedi.', error);
+    elements.appError.hidden = false;
+    elements.appError.textContent = 'Kelime verisi yüklenemedi. Uygulamayı yerel bir HTTP sunucusu üzerinden açın.';
   }
 };
 
-searchInput.addEventListener('input', () => applyFilters());
-sourceFilter.addEventListener('change', () => applyFilters());
-resetBtn.addEventListener('click', () => resetProgress());
-themeToggleBtn.addEventListener('click', () => toggleTheme());
-if (shuffleToggleBtn) {
-  shuffleToggleBtn.addEventListener('click', () => toggleShuffle());
-}
+elements.navButtons.forEach((button) =>
+  button.addEventListener('click', () => switchView(button.dataset.view)),
+);
 
-const correctCard = document.getElementById('correctCard');
-const wrongCard = document.getElementById('wrongCard');
-const scrollToTopBtn = document.getElementById('scrollToTopBtn');
+elements.themeToggle.addEventListener('click', () => {
+  const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+  localStorage.setItem(THEME_KEY, next);
+  setTheme(next);
+});
 
-const updateFilterButtons = () => {
-  if (correctCard) {
-    correctCard.classList.toggle('filter-active', !state.filterWrongOnly);
-  }
-  if (wrongCard) {
-    wrongCard.classList.toggle('filter-active', state.filterWrongOnly);
-  }
-};
-
-const toggleWrongFilter = () => {
-  state.filterWrongOnly = !state.filterWrongOnly;
-  applyFilters();
-};
-
-const handleScrollToTop = () => {
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-};
-
-if (correctCard) {
-  correctCard.addEventListener('click', () => {
-    if (state.filterWrongOnly) {
-      toggleWrongFilter();
-    }
-  });
-  correctCard.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      if (state.filterWrongOnly) {
-        toggleWrongFilter();
-      }
-    }
-  });
-}
-
-if (wrongCard) {
-  wrongCard.addEventListener('click', toggleWrongFilter);
-  wrongCard.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      toggleWrongFilter();
-    }
-  });
-}
-
-if (scrollToTopBtn) {
-  window.addEventListener('scroll', () => {
-    if (window.scrollY > 300) {
-      scrollToTopBtn.hidden = false;
-      scrollToTopBtn.classList.add('show');
-    } else {
-      scrollToTopBtn.classList.remove('show');
-      setTimeout(() => {
-        if (window.scrollY <= 300) {
-          scrollToTopBtn.hidden = true;
-        }
-      }, 300);
-    }
-  });
-  scrollToTopBtn.addEventListener('click', handleScrollToTop);
-}
+window.addEventListener('hashchange', () => switchView(window.location.hash.slice(1), false));
 
 initTheme();
-updateShuffleToggle();
-updateFilterButtons();
 bootstrap();
-

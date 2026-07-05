@@ -1,116 +1,149 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="tr" data-theme="light">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>BayExam Soru Bankası</title>
+    <meta name="description" content="YÖKDİL kelimelerini öğrenme, test ve oyun modlarıyla çalışın." />
+    <title>Word Quiz · Learn, Test & Play</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <header class="top-bar">
-      <div class="brand">
-        <div class="brand-icon">🎯</div>
-        <div>
-          <p class="brand-kicker">Sınav hazırlık için</p>
-          <h1>Soru bankası</h1>
-        </div>
-      </div>
-      <div class="header-actions">
-        <button id="themeToggle" class="toggle-btn" type="button" aria-label="Tema değiştir">
-          <span class="toggle-icon">🌙</span>
-          <span class="toggle-label">Karanlık</span>
+    <header class="topbar">
+      <a class="brand" href="#learn" aria-label="Word Quiz ana sayfa">
+        <span class="brand-mark" aria-hidden="true">W</span>
+        <span><strong>Word Quiz</strong><small>Learn · Test · Play</small></span>
+      </a>
+
+      <nav class="primary-nav" aria-label="Ana bölümler">
+        <button class="nav-tab is-active" type="button" data-view="learn" aria-current="page">
+          <span aria-hidden="true">◫</span><span>Öğren</span>
         </button>
-        <button id="resetProgress" class="ghost-btn" type="button">Sıfırla</button>
-      </div>
+        <button class="nav-tab" type="button" data-view="test">
+          <span aria-hidden="true">✓</span><span>Test</span>
+        </button>
+        <button class="nav-tab" type="button" data-view="games">
+          <span aria-hidden="true">◇</span><span>Oyun</span>
+        </button>
+      </nav>
+
+      <button id="themeToggle" class="icon-button" type="button" aria-label="Koyu temayı aç">
+        <span aria-hidden="true">☾</span>
+      </button>
     </header>
 
-    <main class="layout">
-      <aside class="score-panel">
-        <div class="panel-header">
-          <p class="panel-kicker">Anlık skor</p>
-          <h2>Doğru &amp; yanlış sayım</h2>
+    <main class="app-shell">
+      <section class="hero" aria-labelledby="pageTitle">
+        <div>
+          <p class="eyebrow">4 hafta · 500 çalışma kartı</p>
+          <h1 id="pageTitle">Kelimeleri <em>aktif çalış.</em></h1>
         </div>
-        <div class="score-grid">
-          <div class="score-card" id="correctCard" role="button" tabindex="0" aria-label="Doğru cevapları filtrele">
-            <p class="score-label">Doğru</p>
-            <p id="correctCount" class="score-value">0</p>
-          </div>
-          <div class="score-card" id="wrongCard" role="button" tabindex="0" aria-label="Yanlış cevapları filtrele">
-            <p class="score-label">Yanlış</p>
-            <p id="wrongCount" class="score-value">0</p>
-          </div>
-        </div>
-        <div class="score-meta">
-          <p>Cevaplanan soru: <span id="answeredCount">0</span></p>
-          <p>Toplam soru: <span id="totalCount">0</span></p>
-        </div>
-        <div class="score-progress">
-          <div class="progress-head">
-            <span>Doğruluk</span>
-            <span id="accuracyLabel">0%</span>
-          </div>
-          <div class="progress-track" role="img" aria-label="Doğruluk ilerleme çubuğu">
-            <div id="accuracyProgress" class="progress-fill" style="width: 0%"></div>
-          </div>
-        </div>
-      </aside>
-
-      <section class="question-area">
-        <div class="question-headline">
-          <div>
-            <p class="section-kicker">Çalışma listesi</p>
-            <h2>Sorular ve seçenekler</h2>
-          </div>
-          <div class="filters">
-            <label class="search-field">
-              <span class="sr-only">Soru ara</span>
-              <input type="search" id="searchInput" placeholder="Soru ara..." />
-            </label>
-            <select id="sourceFilter" aria-label="Kaynağa göre filtrele">
-              <option value="">Tüm kaynaklar</option>
-            </select>
-            <button
-              id="shuffleToggle"
-              class="ghost-btn shuffle-btn"
-              type="button"
-              aria-pressed="false"
-            >
-              <span class="shuffle-icon">🔀</span>
-              <span class="shuffle-label">Sırayı karıştır</span>
-            </button>
-          </div>
-        </div>
-        <div id="questionList" class="question-list" aria-live="polite" aria-busy="true"></div>
+        <p>Önce bağlamıyla öğren, sonra kendini test et ve oyunlarla tekrar yap.</p>
       </section>
-    </main>
 
-    <template id="questionTemplate">
-      <article class="question-card">
-        <header class="card-header">
-          <div>
-            <p class="card-kicker"></p>
-            <h3 class="card-title"></h3>
-          </div>
-          <div class="card-header-meta">
-            <span class="source-badge"></span>
-            <span class="card-metrics" hidden aria-live="polite" aria-label="Güncel skor chipi"></span>
+      <section class="overview" aria-label="Genel ilerleme">
+        <article><span class="metric-icon metric-icon--learn">◫</span><div><strong id="learnedMetric">0</strong><small>Öğrenilen</small></div></article>
+        <article><span class="metric-icon metric-icon--test">✓</span><div><strong id="accuracyMetric">0%</strong><small>Test doğruluğu</small></div></article>
+        <article><span class="metric-icon metric-icon--game">◇</span><div><strong id="gameMetric">0</strong><small>En iyi hız skoru</small></div></article>
+        <div class="overview-progress">
+          <span><b>Genel ilerleme</b><small id="progressLabel">0 / 500</small></span>
+          <div class="progress-track" role="progressbar" aria-label="Öğrenme ilerlemesi" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i id="progressFill"></i></div>
+        </div>
+      </section>
+
+      <section id="learnView" class="app-view" data-view-panel="learn">
+        <header class="section-header">
+          <div><p class="eyebrow">Öğrenme alanı</p><h2>Kelimeleri keşfet</h2></div>
+          <div class="segmented-control" aria-label="Öğrenme görünümü">
+            <button class="is-active" type="button" data-learn-mode="card" aria-pressed="true">Flashcard</button>
+            <button type="button" data-learn-mode="list" aria-pressed="false">Liste</button>
           </div>
         </header>
-        <div class="options" role="radiogroup" aria-label="Cevap seçenekleri"></div>
-        <div class="feedback" hidden>
-          <p class="feedback-status"></p>
-          <p class="feedback-text"></p>
-        </div>
-      </article>
-    </template>
 
-    <button id="scrollToTopBtn" class="scroll-to-top-btn" aria-label="Sayfa başına dön" hidden>
-      <svg class="scroll-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <path d="M10 5L5 10M10 5L15 10M10 5V15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-    </button>
+        <div class="toolbar">
+          <label><span>Hafta</span><select id="learnWeek"><option value="all">Tüm haftalar</option><option value="1">1. Hafta</option><option value="2">2. Hafta</option><option value="3">3. Hafta</option><option value="4">4. Hafta</option></select></label>
+          <label class="search-control"><span>Kelime ara</span><input id="learnSearch" type="search" placeholder="Kelime veya anlam…" autocomplete="off" /></label>
+        </div>
+
+        <div id="learnCardMode" class="learn-card-layout">
+          <article class="learn-card">
+            <div class="card-meta"><span id="learnWeekBadge" class="badge">1. Hafta</span><span id="learnPosition">1 / 500</span></div>
+            <div class="flashcard-scene">
+              <button id="flashcardFlip" class="flashcard" type="button" aria-expanded="false" aria-label="Kartı çevir ve Türkçe anlamını göster">
+                <span class="flashcard-inner">
+                  <span class="flashcard-face flashcard-front"><small>İngilizce kelime</small><strong id="learnWord">—</strong><em>Türkçesi için karta dokun</em></span>
+                  <span class="flashcard-face flashcard-back"><small>Türkçe anlamı</small><strong id="learnMeaning">—</strong><em>Kelimeye dönmek için tekrar dokun</em></span>
+                </span>
+              </button>
+            </div>
+            <div id="learnDetails" class="learn-details" hidden><p class="meaning-label">Bağlam içinde kullanım</p><div id="learnExamples" class="example-list"></div></div>
+            <div id="learnEmpty" class="empty-state" hidden><span>⌕</span><h3>Kelime bulunamadı</h3><p>Filtreyi veya arama ifadesini değiştirin.</p></div>
+          </article>
+          <div class="card-actions">
+            <button id="learnPrevious" class="button button--ghost" type="button">← Önceki</button>
+            <button id="markLearned" class="button button--soft" type="button">✓ Öğrendim</button>
+            <button id="learnNext" class="button button--primary" type="button">Sonraki →</button>
+          </div>
+        </div>
+
+        <div id="learnListMode" class="learn-list-layout" hidden>
+          <div id="learnList" class="learn-list"></div>
+          <button id="loadMoreWords" class="button button--ghost load-more" type="button">Daha fazla göster</button>
+        </div>
+      </section>
+
+      <section id="testView" class="app-view" data-view-panel="test" hidden>
+        <header class="section-header"><div><p class="eyebrow">Test alanı</p><h2>Bilgini ölç</h2></div></header>
+
+        <div id="testSetup" class="setup-card">
+          <div class="setup-copy"><span class="feature-icon">✓</span><h3>Yeni test oluştur</h3><p>Haftanı, soru sayısını ve soru yönünü seç. Her testte kelimeler yeniden karıştırılır.</p></div>
+          <div class="setup-form">
+            <label><span>Hafta</span><select id="testWeek"><option value="all">Tüm haftalar</option><option value="1">1. Hafta</option><option value="2">2. Hafta</option><option value="3">3. Hafta</option><option value="4">4. Hafta</option></select></label>
+            <label><span>Soru sayısı</span><select id="testCount"><option value="10">10 soru</option><option value="20">20 soru</option><option value="30">30 soru</option></select></label>
+            <label><span>Soru yönü</span><select id="testDirection"><option value="word-to-meaning">İngilizce → Türkçe</option><option value="meaning-to-word">Türkçe → İngilizce</option></select></label>
+            <button id="startTest" class="button button--primary" type="button">Testi başlat →</button>
+          </div>
+        </div>
+
+        <div id="testSession" class="session-card" hidden>
+          <div class="session-progress"><span id="testPosition">Soru 1 / 10</span><span id="testLiveScore">0 doğru</span><div><i id="testProgressFill"></i></div></div>
+          <div class="test-prompt"><p id="testPromptLabel">Doğru anlamı seç</p><h3 id="testPrompt">—</h3></div>
+          <div id="testOptions" class="choice-grid" role="radiogroup" aria-label="Test seçenekleri"></div>
+          <div id="testFeedback" class="inline-feedback" hidden><span id="testFeedbackIcon"></span><div><strong id="testFeedbackTitle"></strong><p id="testFeedbackText"></p></div></div>
+          <button id="continueTest" class="button button--primary continue-button" type="button" hidden>Sonraki soru →</button>
+        </div>
+
+        <div id="testResults" class="results-card" hidden>
+          <span id="resultRing" class="result-ring">0%</span><p class="eyebrow">Test tamamlandı</p><h3 id="resultTitle">Sonucun hazır</h3><p id="resultSummary"></p>
+          <div class="result-actions"><button id="retryTest" class="button button--primary" type="button">Yeni test</button><button id="reviewTest" class="button button--ghost" type="button">Yanlışları incele</button></div>
+          <div id="wrongReview" class="wrong-review" hidden></div>
+        </div>
+      </section>
+
+      <section id="gamesView" class="app-view" data-view-panel="games" hidden>
+        <header class="section-header"><div><p class="eyebrow">Oyun alanı</p><h2>Tekrarı oyuna çevir</h2></div><label class="compact-select"><span>Hafta</span><select id="gameWeek"><option value="all">Tüm haftalar</option><option value="1">1. Hafta</option><option value="2">2. Hafta</option><option value="3">3. Hafta</option><option value="4">4. Hafta</option></select></label></header>
+
+        <div id="gameMenu" class="game-menu">
+          <button class="game-tile game-tile--match" type="button" data-game="matching"><span class="game-art">⌘</span><small>Eşleştirme</small><h3>Kelime çiftlerini bul</h3><p>İngilizce kelimeleri Türkçe anlamlarıyla en az hamlede eşleştir.</p><b>Oyunu aç →</b></button>
+          <button class="game-tile game-tile--speed" type="button" data-game="speed"><span class="game-art">ϟ</span><small>Hız turu</small><h3>45 saniyede yarış</h3><p>Süre dolmadan olabildiğince çok doğru anlamı seç ve serini koru.</p><b>Oyunu aç →</b></button>
+        </div>
+
+        <div id="matchingGame" class="game-board-panel" hidden>
+          <div class="game-board-header"><button class="back-button" type="button" data-back-games>← Oyunlar</button><div><strong id="matchMoves">0 hamle</strong><span id="matchTime">00:00</span></div><button id="newMatchRound" class="button button--soft" type="button">Yeni tur</button></div>
+          <div id="matchGrid" class="match-grid"></div>
+          <p id="matchMessage" class="game-message" aria-live="polite"></p>
+        </div>
+
+        <div id="speedGame" class="game-board-panel" hidden>
+          <div class="game-board-header"><button class="back-button" type="button" data-back-games>← Oyunlar</button><div><strong id="speedScore">0 puan</strong><span id="speedStreak">0 seri</span></div><span id="speedTimer" class="timer-pill">45</span></div>
+          <div id="speedIntro" class="speed-intro"><span class="feature-icon">ϟ</span><h3>Hazır olduğunda süre başlar</h3><p>Doğru cevap +10 puan, her üçlük seri ekstra +5 puan kazandırır.</p><button id="startSpeedGame" class="button button--primary" type="button">Başla</button></div>
+          <div id="speedQuestion" class="speed-question" hidden><p>Doğru anlamı seç</p><h3 id="speedWord">—</h3><div id="speedOptions" class="choice-grid"></div></div>
+          <div id="speedResult" class="speed-result" hidden><span>Tur tamamlandı</span><h3 id="speedFinalScore">0 puan</h3><p id="speedBestLabel"></p><button id="restartSpeedGame" class="button button--primary" type="button">Tekrar oyna</button></div>
+        </div>
+      </section>
+
+      <div id="appError" class="error-banner" hidden></div>
+    </main>
 
     <script type="module" src="app.js"></script>
   </body>
 </html>
-
