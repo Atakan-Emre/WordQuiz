@@ -1,6 +1,6 @@
 # Word Quiz
 
-YÖKDİL odaklı, tarayıcıda çalışan İngilizce kelime quiz uygulaması. Dört haftalık PDF
+YÖKDİL odaklı, tarayıcıda çalışan İngilizce kelime quiz uygulaması. PDF
 kaynaklarından çıkarılan 500 kelimeyi Türkçe anlamları ve sağlık, sosyal bilimler ve fen
 örnekleriyle sunar.
 
