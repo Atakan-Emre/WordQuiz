@@ -10,6 +10,8 @@ const elements = {
   navButtons: [...document.querySelectorAll('[data-view]')],
   viewPanels: [...document.querySelectorAll('[data-view-panel]')],
   themeToggle: document.getElementById('themeToggle'),
+  topbar: document.querySelector('.topbar'),
+  mobileNavToggle: document.getElementById('mobileNavToggle'),
   learnedMetric: document.getElementById('learnedMetric'),
   accuracyMetric: document.getElementById('accuracyMetric'),
   gameMetric: document.getElementById('gameMetric'),
@@ -60,8 +62,20 @@ const switchView = (view, updateHash = true) => {
   elements.viewPanels.forEach((panel) => {
     panel.hidden = panel.dataset.viewPanel !== view;
   });
+  elements.topbar.classList.remove('is-nav-open');
+  elements.mobileNavToggle.setAttribute('aria-expanded', 'false');
   if (updateHash) history.replaceState(null, '', `#${view}`);
   window.scrollTo({ top: 0, behavior: 'smooth' });
+};
+
+const syncCompactHeader = () => {
+  const responsive = window.matchMedia('(max-width: 980px)').matches;
+  const compact = responsive && window.scrollY > 120;
+  elements.topbar.classList.toggle('is-compact', compact);
+  if (!compact) {
+    elements.topbar.classList.remove('is-nav-open');
+    elements.mobileNavToggle.setAttribute('aria-expanded', 'false');
+  }
 };
 
 const setTheme = (theme) => {
@@ -105,7 +119,27 @@ elements.themeToggle.addEventListener('click', () => {
   setTheme(next);
 });
 
+elements.mobileNavToggle.addEventListener('click', () => {
+  const open = !elements.topbar.classList.contains('is-nav-open');
+  elements.topbar.classList.toggle('is-nav-open', open);
+  elements.mobileNavToggle.setAttribute('aria-expanded', String(open));
+  elements.mobileNavToggle.setAttribute('aria-label', open ? 'Navigasyonu kapat' : 'Navigasyonu aç');
+});
+
+let headerFrame = null;
+const scheduleHeaderSync = () => {
+  if (headerFrame !== null) return;
+  headerFrame = window.requestAnimationFrame(() => {
+    syncCompactHeader();
+    headerFrame = null;
+  });
+};
+
+window.addEventListener('scroll', scheduleHeaderSync, { passive: true });
+window.addEventListener('resize', scheduleHeaderSync);
+
 window.addEventListener('hashchange', () => switchView(window.location.hash.slice(1), false));
 
 initTheme();
+syncCompactHeader();
 bootstrap();

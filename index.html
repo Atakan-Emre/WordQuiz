@@ -9,6 +9,7 @@
   </head>
   <body>
     <header class="topbar">
+      <button id="mobileNavToggle" class="mobile-nav-toggle" type="button" aria-label="Navigasyonu aç" aria-expanded="false">W</button>
       <a class="brand" href="#learn" aria-label="Word Quiz ana sayfa">
         <span class="brand-mark" aria-hidden="true">W</span>
         <span><strong>Word Quiz</strong><small>Learn · Test · Play</small></span>
@@ -62,6 +63,7 @@
 
         <div class="toolbar">
           <label><span>Hafta</span><select id="learnWeek"><option value="all">Tüm haftalar</option><option value="1">1. Hafta</option><option value="2">2. Hafta</option><option value="3">3. Hafta</option><option value="4">4. Hafta</option></select></label>
+          <label><span>Alan</span><select id="learnDomain"><option value="all">Tüm alanlar</option><option value="health">Sağlık</option><option value="social">Sosyal</option><option value="science">Fen</option></select></label>
           <label class="search-control"><span>Kelime ara</span><input id="learnSearch" type="search" placeholder="Kelime veya anlam…" autocomplete="off" /></label>
           <button id="shuffleLearn" class="button button--soft shuffle-learn" type="button"><span aria-hidden="true">⇄</span> Karıştır</button>
         </div>

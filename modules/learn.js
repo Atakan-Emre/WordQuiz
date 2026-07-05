@@ -23,6 +23,7 @@ export class LearnModule {
   bindElements() {
     const byId = (id) => this.root.querySelector(`#${id}`);
     this.week = byId('learnWeek');
+    this.domain = byId('learnDomain');
     this.search = byId('learnSearch');
     this.cardMode = byId('learnCardMode');
     this.listMode = byId('learnListMode');
@@ -47,6 +48,7 @@ export class LearnModule {
 
   bindEvents() {
     this.week.addEventListener('change', () => this.applyFilters(false));
+    this.domain.addEventListener('change', () => this.render());
     this.search.addEventListener('input', () => this.applyFilters(false));
     this.previous.addEventListener('click', () => this.move(-1));
     this.next.addEventListener('click', () => this.move(1));
@@ -72,6 +74,11 @@ export class LearnModule {
 
   current() {
     return this.filtered[this.index] || null;
+  }
+
+  examplesFor(entry) {
+    if (this.domain.value === 'all') return entry.examples;
+    return entry.examples.filter((example) => example.domain === this.domain.value);
   }
 
   applyFilters(preserve = true) {
@@ -125,7 +132,7 @@ export class LearnModule {
     this.meaning.textContent = entry.meaning;
     this.badge.textContent = `${entry.week}. Hafta`;
     this.position.textContent = `${this.index + 1} / ${this.filtered.length}`;
-    this.examples.replaceChildren(...createExampleList(entry.examples).children);
+    this.examples.replaceChildren(...createExampleList(this.examplesFor(entry)).children);
     this.updateMarkButton(entry.id);
   }
 
@@ -201,7 +208,7 @@ export class LearnModule {
       learnedButton.dataset.learnedId = entry.id;
       learnedButton.textContent = learned ? '✓ Öğrenildi' : '✓ Öğrendim';
       learnedButton.addEventListener('click', () => this.toggleLearned(entry.id));
-      details.append(createExampleList(entry.examples), learnedButton);
+      details.append(createExampleList(this.examplesFor(entry)), learnedButton);
       trigger.addEventListener('click', () => {
         details.hidden = !details.hidden;
         trigger.setAttribute('aria-expanded', String(!details.hidden));
@@ -259,7 +266,8 @@ export class LearnModule {
       meaning.textContent = entry.meaning;
       content.append(enLabel, word, divider, trLabel, meaning);
 
-      const example = entry.examples[absoluteIndex % entry.examples.length];
+      const availableExamples = this.examplesFor(entry);
+      const example = availableExamples[absoluteIndex % availableExamples.length];
       const context = document.createElement('div');
       context.className = 'swipe-context';
       const contextLabel = document.createElement('span');
