@@ -35,7 +35,7 @@
     <main class="app-shell">
       <section class="hero" aria-labelledby="pageTitle">
         <div>
-          <p class="eyebrow">4 hafta · 500 çalışma kartı</p>
+          <p id="deckSummary" class="eyebrow">5 hafta · 660 çalışma kartı</p>
           <h1 id="pageTitle">Kelimeleri <em>aktif çalış.</em></h1>
         </div>
         <p>Önce bağlamıyla öğren, sonra kendini test et ve oyunlarla tekrar yap.</p>
@@ -46,7 +46,7 @@
         <article><span class="metric-icon metric-icon--test">✓</span><div><strong id="accuracyMetric">0%</strong><small>Test doğruluğu</small></div></article>
         <article><span class="metric-icon metric-icon--game">◇</span><div><strong id="gameMetric">0</strong><small>En iyi hız skoru</small></div></article>
         <div class="overview-progress">
-          <span><b>Genel ilerleme</b><small id="progressLabel">0 / 500</small></span>
+          <span><b>Genel ilerleme</b><small id="progressLabel">0 / 660</small></span>
           <div class="progress-track" role="progressbar" aria-label="Öğrenme ilerlemesi" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i id="progressFill"></i></div>
         </div>
       </section>
@@ -62,7 +62,7 @@
         </header>
 
         <div class="toolbar">
-          <label><span>Hafta</span><select id="learnWeek"><option value="all">Tüm haftalar</option><option value="1">1. Hafta</option><option value="2">2. Hafta</option><option value="3">3. Hafta</option><option value="4">4. Hafta</option></select></label>
+          <label><span>Hafta</span><select id="learnWeek"><option value="all">Tüm haftalar</option><option value="1">1. Hafta</option><option value="2">2. Hafta</option><option value="3">3. Hafta</option><option value="4">4. Hafta</option><option value="5">5. Hafta</option></select></label>
           <label><span>Alan</span><select id="learnDomain"><option value="all">Tüm alanlar</option><option value="health">Sağlık</option><option value="social">Sosyal</option><option value="science">Fen</option></select></label>
           <label class="search-control"><span>Kelime ara</span><input id="learnSearch" type="search" placeholder="Kelime veya anlam…" autocomplete="off" /></label>
           <button id="shuffleLearn" class="button button--soft shuffle-learn" type="button"><span aria-hidden="true">⇄</span> Karıştır</button>
@@ -70,11 +70,11 @@
 
         <div id="learnCardMode" class="learn-card-layout">
           <article class="learn-card">
-            <div class="card-meta"><span id="learnWeekBadge" class="badge">1. Hafta</span><span id="learnPosition">1 / 500</span></div>
+            <div class="card-meta"><span id="learnWeekBadge" class="badge">1. Hafta</span><span id="learnPosition">1 / 660</span></div>
             <div class="flashcard-scene">
               <button id="flashcardFlip" class="flashcard" type="button" aria-expanded="false" aria-label="Kartı çevir ve Türkçe anlamını göster">
                 <span class="flashcard-inner">
-                  <span class="flashcard-face flashcard-front"><small>İngilizce kelime</small><strong id="learnWord">—</strong><em>Türkçesi için karta dokun</em></span>
+                  <span class="flashcard-face flashcard-front"><small>İngilizce kelime</small><strong id="learnWord">—</strong><span id="learnCardSynonyms" class="synonym-strip synonym-strip--card" hidden></span><em>Türkçesi için karta dokun</em></span>
                   <span class="flashcard-face flashcard-back"><small>Türkçe anlamı</small><strong id="learnMeaning">—</strong><em>Kelimeye dönmek için tekrar dokun</em></span>
                 </span>
               </button>
@@ -106,7 +106,7 @@
         <div id="testSetup" class="setup-card">
           <div class="setup-copy"><span class="feature-icon">✓</span><h3>Yeni test oluştur</h3><p>Haftanı, soru sayısını ve soru yönünü seç. Her testte kelimeler yeniden karıştırılır.</p></div>
           <div class="setup-form">
-            <label><span>Hafta</span><select id="testWeek"><option value="all">Tüm haftalar</option><option value="1">1. Hafta</option><option value="2">2. Hafta</option><option value="3">3. Hafta</option><option value="4">4. Hafta</option></select></label>
+            <label><span>Hafta</span><select id="testWeek"><option value="all">Tüm haftalar</option><option value="1">1. Hafta</option><option value="2">2. Hafta</option><option value="3">3. Hafta</option><option value="4">4. Hafta</option><option value="5">5. Hafta</option></select></label>
             <label><span>Soru sayısı</span><select id="testCount"><option value="10">10 soru</option><option value="20">20 soru</option><option value="30">30 soru</option></select></label>
             <label><span>Soru yönü</span><select id="testDirection"><option value="word-to-meaning">İngilizce → Türkçe</option><option value="meaning-to-word">Türkçe → İngilizce</option></select></label>
             <button id="startTest" class="button button--primary" type="button">Testi başlat →</button>
@@ -129,7 +129,7 @@
       </section>
 
       <section id="gamesView" class="app-view" data-view-panel="games" hidden>
-        <header class="section-header"><div><p class="eyebrow">Oyun alanı</p><h2>Tekrarı oyuna çevir</h2></div><label class="compact-select"><span>Hafta</span><select id="gameWeek"><option value="all">Tüm haftalar</option><option value="1">1. Hafta</option><option value="2">2. Hafta</option><option value="3">3. Hafta</option><option value="4">4. Hafta</option></select></label></header>
+        <header class="section-header"><div><p class="eyebrow">Oyun alanı</p><h2>Tekrarı oyuna çevir</h2></div><label class="compact-select"><span>Hafta</span><select id="gameWeek"><option value="all">Tüm haftalar</option><option value="1">1. Hafta</option><option value="2">2. Hafta</option><option value="3">3. Hafta</option><option value="4">4. Hafta</option><option value="5">5. Hafta</option></select></label></header>
 
         <div id="gameMenu" class="game-menu">
           <button class="game-tile game-tile--match" type="button" data-game="matching"><span class="game-art">⌘</span><small>Eşleştirme</small><h3>Kelime çiftlerini bul</h3><p>İngilizce kelimeleri Türkçe anlamlarıyla en az hamlede eşleştir.</p><b>Oyunu aç →</b></button>
@@ -153,6 +153,6 @@
       <div id="appError" class="error-banner" hidden></div>
     </main>
 
-    <script type="module" src="app.js"></script>
+    <script type="module" src="app.js?v=20260708-synonyms"></script>
   </body>
 </html>

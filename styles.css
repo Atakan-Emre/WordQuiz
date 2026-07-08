@@ -139,6 +139,14 @@ button:disabled { cursor: not-allowed; opacity: .42; }
 .flashcard-back strong { color: var(--accent-strong); font-size: clamp(1.8rem, 4.4vw, 3.4rem); line-height: 1.12; }
 .flashcard-face em { padding: 8px 13px; border-radius: 99px; background: color-mix(in srgb, var(--surface) 78%, transparent); color: var(--muted); font-size: .7rem; font-style: normal; font-weight: 720; }
 .flashcard:hover .flashcard-face { border-color: var(--accent); }
+.synonym-strip { max-width: 100%; display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-start; gap: 7px 9px; color: var(--text); }
+.synonym-label { flex: 0 0 auto; padding: 5px 8px; border-radius: 99px; background: var(--blue-soft); color: var(--blue); font-size: .56rem; font-weight: 880; letter-spacing: .1em; text-transform: uppercase; }
+.synonym-chips { min-width: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.synonym-chip { max-width: 100%; padding: 5px 9px; border: 1px solid color-mix(in srgb, var(--accent) 20%, var(--line)); border-radius: 99px; background: color-mix(in srgb, var(--surface-2) 80%, transparent); color: var(--accent-strong); overflow-wrap: anywhere; font-size: .68rem; font-weight: 760; line-height: 1.15; }
+.synonym-chip--more { background: var(--accent-soft); color: var(--accent); }
+.synonym-strip--card { justify-content: center; margin: -8px 0 16px; max-height: 67px; overflow: hidden; }
+.synonym-strip--card .synonym-chips { justify-content: center; }
+.synonym-strip--details { margin: 0 0 14px; padding: 12px; border: 1px solid color-mix(in srgb, var(--line) 78%, transparent); border-radius: 14px; background: color-mix(in srgb, var(--accent-soft) 34%, transparent); }
 .learn-details { padding-top: 28px; border-top: 1px solid var(--line); }
 .meaning-label { margin: 0 0 5px; color: var(--muted); font-size: .68rem; font-weight: 850; letter-spacing: .11em; text-transform: uppercase; }
 .learn-details > h4 { margin: 0 0 26px; font: 500 1.65rem Georgia, serif; }
@@ -196,6 +204,8 @@ button:disabled { cursor: not-allowed; opacity: .42; }
 .swipe-slide-content { width: min(760px,100%); text-align: center; }
 .swipe-slide-content small { display: block; color: var(--muted); font-size: .63rem; font-weight: 850; letter-spacing: .14em; text-transform: uppercase; }
 .swipe-slide-content h3 { margin: 9px 0 20px; overflow-wrap: anywhere; font: 500 clamp(3rem, 9vw, 6.2rem)/.95 Georgia, serif; letter-spacing: -.05em; }
+.synonym-strip--swipe { justify-content: center; margin: -7px auto 18px; }
+.synonym-strip--swipe .synonym-chips { justify-content: center; }
 .swipe-slide-content i { width: 48px; height: 2px; display: block; margin: 0 auto 20px; background: var(--accent); }
 .swipe-slide-content h4 { max-width: 760px; margin: 9px auto 0; color: var(--accent-strong); overflow-wrap: anywhere; font: 500 clamp(1.5rem, 4vw, 2.7rem)/1.15 Georgia, serif; }
 .swipe-context { width: min(760px,100%); padding: 16px 18px; border: 1px solid color-mix(in srgb, var(--line) 75%, transparent); border-radius: 15px; background: color-mix(in srgb, var(--surface-2) 82%, transparent); }
@@ -358,6 +368,11 @@ button:disabled { cursor: not-allowed; opacity: .42; }
   .flashcard-face { padding: 20px 16px; border-radius: 18px; }
   .flashcard-face strong { font-size: clamp(2.3rem, 14vw, 4.2rem); }
   .flashcard-back strong { font-size: clamp(1.55rem, 8vw, 2.35rem); }
+  .synonym-strip { gap: 5px; }
+  .synonym-label { padding: 4px 7px; font-size: .5rem; }
+  .synonym-chip { padding: 4px 7px; font-size: .6rem; }
+  .synonym-strip--card { max-height: 57px; margin: -6px 0 13px; }
+  .synonym-strip--details { padding: 10px; }
   .setup-card { padding: 20px 15px; }
   .setup-form { padding: 16px; }
   .session-card, .results-card, .game-board-panel { padding: 20px 15px; }

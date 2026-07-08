@@ -1,4 +1,12 @@
-import { createExampleList, DOMAIN_LABELS, filterByWeek, normalize, shuffle } from './utils.js';
+import {
+  createExampleList,
+  createSynonymChips,
+  DOMAIN_LABELS,
+  filterByWeek,
+  normalize,
+  renderSynonymChips,
+  shuffle,
+} from './utils.js?v=20260708-synonyms';
 
 const PAGE_SIZE = 30;
 const SWIPE_BATCH_SIZE = 20;
@@ -31,6 +39,7 @@ export class LearnModule {
     this.swipeFeed = byId('swipeFeed');
     this.word = byId('learnWord');
     this.meaning = byId('learnMeaning');
+    this.cardSynonyms = byId('learnCardSynonyms');
     this.examples = byId('learnExamples');
     this.details = byId('learnDetails');
     this.flashcard = byId('flashcardFlip');
@@ -85,7 +94,9 @@ export class LearnModule {
     const currentId = preserve ? this.current()?.id : null;
     const query = normalize(this.search.value);
     this.filtered = filterByWeek(this.order, this.week.value).filter(
-      (item) => !query || normalize(`${item.word} ${item.meaning}`).includes(query),
+      (item) =>
+        !query ||
+        normalize(`${item.word} ${item.meaning} ${(item.synonyms || []).join(' ')}`).includes(query),
     );
     const preserved = this.filtered.findIndex((item) => item.id === currentId);
     this.index = preserved >= 0 ? preserved : 0;
@@ -130,6 +141,7 @@ export class LearnModule {
     if (!entry) return;
     this.word.textContent = entry.word;
     this.meaning.textContent = entry.meaning;
+    renderSynonymChips(this.cardSynonyms, entry.synonyms, { limit: 6 });
     this.badge.textContent = `${entry.week}. Hafta`;
     this.position.textContent = `${this.index + 1} / ${this.filtered.length}`;
     this.examples.replaceChildren(...createExampleList(this.examplesFor(entry)).children);
@@ -208,6 +220,8 @@ export class LearnModule {
       learnedButton.dataset.learnedId = entry.id;
       learnedButton.textContent = learned ? '✓ Öğrenildi' : '✓ Öğrendim';
       learnedButton.addEventListener('click', () => this.toggleLearned(entry.id));
+      const synonyms = createSynonymChips(entry.synonyms, { className: 'synonym-strip--details' });
+      if (synonyms) details.appendChild(synonyms);
       details.append(createExampleList(this.examplesFor(entry)), learnedButton);
       trigger.addEventListener('click', () => {
         details.hidden = !details.hidden;
@@ -259,12 +273,18 @@ export class LearnModule {
       enLabel.textContent = 'English';
       const word = document.createElement('h3');
       word.textContent = entry.word;
+      const synonyms = createSynonymChips(entry.synonyms, {
+        limit: 5,
+        className: 'synonym-strip--swipe',
+      });
       const divider = document.createElement('i');
       const trLabel = document.createElement('small');
       trLabel.textContent = 'Türkçe';
       const meaning = document.createElement('h4');
       meaning.textContent = entry.meaning;
-      content.append(enLabel, word, divider, trLabel, meaning);
+      content.append(enLabel, word);
+      if (synonyms) content.appendChild(synonyms);
+      content.append(divider, trLabel, meaning);
 
       const availableExamples = this.examplesFor(entry);
       const example = availableExamples[absoluteIndex % availableExamples.length];

@@ -1,14 +1,14 @@
 # Word Quiz
 
 YÖKDİL odaklı, tarayıcıda çalışan İngilizce kelime quiz uygulaması. PDF
-kaynaklarından çıkarılan 500 kelimeyi Türkçe anlamları ve sağlık, sosyal bilimler ve fen
-örnekleriyle sunar.
+kaynaklarından çıkarılan 660 kelimeyi Türkçe anlamları, eş anlamlıları ve sağlık, sosyal
+bilimler ve fen örnekleriyle sunar.
 
 ## Modüller
 
-- **Öğren:** Dokununca İngilizceden Türkçeye dönen flashcard'lar, taşmayan EN/TR listesi
-  ve Reels benzeri dikey snap kullanan kaydırmalı öğrenme akışı. Hafta, alan
-  (Sağlık/Sosyal/Fen), arama ve karıştırma filtreleri üç görünümde ortak çalışır.
+- **Öğren:** Dokununca İngilizceden Türkçeye dönen flashcard'lar, eş anlamlı chip'leri,
+  taşmayan EN/TR listesi ve Reels benzeri dikey snap kullanan kaydırmalı öğrenme akışı.
+  Hafta, alan (Sağlık/Sosyal/Fen), arama ve karıştırma filtreleri üç görünümde ortak çalışır.
 - **Test:** Hafta, 10/20/30 soru ve İngilizce-Türkçe veya Türkçe-İngilizce yön seçimi;
   anlık geri bildirim, sonuç ekranı ve yanlış inceleme.
 - **Oyun:** Altı çiftlik kelime eşleştirme ve 45 saniyelik hız turu.
@@ -34,9 +34,11 @@ python3 -m pip install -r requirements.txt
 npm run parse-data
 ```
 
-Parser `Word/` altındaki dört PDF'nin ana kelime bölümlerini okuyup
-`data/vocabulary.json` dosyasını üretir. PDF sonlarındaki eş anlamlı kelime ekleri quiz
-havuzuna dahil edilmez.
+Parser `Word/` altındaki beş PDF'nin ana kelime bölümlerini ve PDF sonlarındaki eş
+anlamlı kelime eklerini okuyup `data/vocabulary.json` dosyasını üretir. Eş anlamlılar
+öğrenme modülünde destek bilgi olarak gösterilir; test/oyun cevap havuzuna karıştırılmaz.
+Parser ayrıca PDF kaynaklı bariz yazım ve anlam temizlemelerini kalıcı redakte katmanıyla
+uygular; veri yeniden üretildiğinde bu düzeltmeler korunur.
 
 ## Kod yapısı
 

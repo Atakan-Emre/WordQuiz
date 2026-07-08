@@ -1,4 +1,4 @@
-import { buildChoices, filterByWeek, shuffle } from './utils.js';
+import { buildChoices, filterByWeek, shuffle } from './utils.js?v=20260708-synonyms';
 
 export class TestModule {
   constructor(root, vocabulary, progress, onProgress) {

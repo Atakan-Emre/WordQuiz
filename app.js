@@ -1,7 +1,7 @@
-import { GamesModule } from './modules/games.js';
-import { LearnModule } from './modules/learn.js';
-import { loadProgress, saveProgress } from './modules/storage.js';
-import { TestModule } from './modules/test.js';
+import { GamesModule } from './modules/games.js?v=20260708-synonyms';
+import { LearnModule } from './modules/learn.js?v=20260708-synonyms';
+import { loadProgress, saveProgress } from './modules/storage.js?v=20260708-synonyms';
+import { TestModule } from './modules/test.js?v=20260708-synonyms';
 
 const THEME_KEY = 'word-quiz-theme';
 const validViews = new Set(['learn', 'test', 'games']);
@@ -12,6 +12,8 @@ const elements = {
   themeToggle: document.getElementById('themeToggle'),
   topbar: document.querySelector('.topbar'),
   mobileNavToggle: document.getElementById('mobileNavToggle'),
+  deckSummary: document.getElementById('deckSummary'),
+  weekSelects: ['learnWeek', 'testWeek', 'gameWeek'].map((id) => document.getElementById(id)),
   learnedMetric: document.getElementById('learnedMetric'),
   accuracyMetric: document.getElementById('accuracyMetric'),
   gameMetric: document.getElementById('gameMetric'),
@@ -46,6 +48,19 @@ const renderOverview = () => {
   elements.progressLabel.textContent = `${learned} / ${vocabulary.length || 500}`;
   elements.progressFill.style.width = `${completion}%`;
   elements.progressTrack.setAttribute('aria-valuenow', String(completion));
+};
+
+const populateWeekFilters = () => {
+  const weeks = [...new Set(vocabulary.map((entry) => entry.week))]
+    .filter((week) => Number.isFinite(Number(week)))
+    .sort((first, second) => Number(first) - Number(second));
+  elements.deckSummary.textContent = `${weeks.length} hafta · ${vocabulary.length} çalışma kartı`;
+  elements.weekSelects.forEach((select) => {
+    const selected = select.value;
+    select.replaceChildren(new Option('Tüm haftalar', 'all'));
+    weeks.forEach((week) => select.append(new Option(`${week}. Hafta`, String(week))));
+    select.value = weeks.map(String).includes(selected) ? selected : 'all';
+  });
 };
 
 const switchView = (view, updateHash = true) => {
@@ -93,9 +108,10 @@ const initTheme = () => {
 
 const bootstrap = async () => {
   try {
-    const response = await fetch('data/vocabulary.json');
+    const response = await fetch('data/vocabulary.json', { cache: 'no-cache' });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     vocabulary = await response.json();
+    populateWeekFilters();
     renderOverview();
     learnModule = new LearnModule(document.getElementById('learnView'), vocabulary, progress, persistAndRefresh);
     testModule = new TestModule(document.getElementById('testView'), vocabulary, progress, persistAndRefresh);
